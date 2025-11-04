@@ -59,5 +59,6 @@
   "files.associations": {
     ".fantomasignore": "ignore",
     "lexer.h": "c"
-  }
+  },
+  "C_Cpp.default.compilerPath": "C:/MinGW/bin/gcc.exe"
 }

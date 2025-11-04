@@ -1,4 +1,5 @@
-// What category this token belongs to
+
+//Category
 typedef enum {
     CAT_KEYWORD,
     CAT_RESERVED,
@@ -10,6 +11,9 @@ typedef enum {
     CAT_UNKNOWN
 } TokenCategory;
 
+//Tokens within each category:
+
+//Tokens for keywords category:
 typedef enum {
     K_ANI,
     K_TANIM,
@@ -28,11 +32,12 @@ typedef enum {
     K_PUBLIKO
 } KeywordToken;
 
+//Tokens for reserved words category:
 typedef enum {
     R_TAMA,
     R_MALI,
-    R_UGAT,    // Main
-    R_BALIK,   // Return
+    R_UGAT,    
+    R_BALIK, 
     R_BILANG,
     R_KWERDAS,
     R_TITIK,
@@ -42,6 +47,7 @@ typedef enum {
     R_WALA
 } ReservedToken;
 
+//Tokens for noisewords category:
 typedef enum {
     N_NG,
     N_AY,
@@ -53,6 +59,7 @@ typedef enum {
     N_ITAKDA
 } NoiseWordToken;
 
+//Tokens for operators category:
 typedef enum {
     O_PLUS,        // +
     O_MINUS,       // -
@@ -72,6 +79,7 @@ typedef enum {
     O_NOT          // !
 } OperatorToken;
 
+//Tokens for delimiters category:
 typedef enum {
     D_LPAREN,      // (
     D_RPAREN,      // )
@@ -87,6 +95,7 @@ typedef enum {
     D_SQUOTE       // '
 } DelimiterToken;
 
+//Tokens for literals category:
 typedef enum {
     L_IDENTIFIER,
     L_INT_LITERAL,
@@ -96,11 +105,14 @@ typedef enum {
     L_BOOL_LITERAL  // (Tama, Mali)
 } LiteralToken;
 
+
+//Tokens for comments category:
 typedef enum {
     C_SINGLE_LINE,  // //
     C_MULTI_LINE    // /* */
 } CommentToken;
 
+//General structure for a Token
 typedef struct {
     TokenCategory category;
     int tokenValue;          // Holds actual enum value from KeywordToken, OperatorToken, etc.
