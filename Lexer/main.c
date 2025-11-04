@@ -123,10 +123,10 @@ void lexer (FILE *file) {
         if (c == '\n') {
             lineNumber++;
         }
+       
         if (isspace((unsigned char)c)) {
-            // Ignore whitespace
-        }
-        if(c == ';') {
+            //ignore
+        } else if(c == ';') {
             tok = make_token(CAT_DELIMITER, D_SEMICOLON, ";", lineNumber);
             produced = true;
         } else if (c == '{') {
@@ -163,6 +163,29 @@ void lexer (FILE *file) {
                 tok = make_token(CAT_OPERATOR, O_DIVIDE, "/", lineNumber);
                 produced = true;
             }
+        }else if (c == '\'') {
+            char nextCh = (char)fgetc(file);
+            if (isalpha((unsigned char)nextCh)) {
+                // Handle character literal ('a', 'b', etc.)
+                char lex[2] = {nextCh, '\0'};
+                tok = make_token(CAT_LITERAL, L_TITIK_LITERAL, lex, lineNumber);
+                
+                // Consume closing quote
+                int closeQuote = fgetc(file);
+                if (closeQuote != '\'') {
+                    ungetc(closeQuote, file);  // Push back if not a closing quote
+                    tok = make_token(CAT_UNKNOWN, 0, lex, lineNumber);
+                }
+                produced = true;
+            } else {
+        // Not a valid character literal, treat as delimiter
+                ungetc(nextCh, file);
+                tok = make_token(CAT_DELIMITER, D_SQUOTE, "\'", lineNumber);
+                produced = true;
+            }
+        } else if (c == '\"') {
+        tok = make_token(CAT_DELIMITER, D_QUOTE, "\"", lineNumber);
+        produced = true;
         }else if (c == ','){
             tok = make_token(CAT_DELIMITER, D_COMMA, ",", lineNumber);
             produced = true;
@@ -253,7 +276,7 @@ void lexer (FILE *file) {
 Token digitChecker(FILE *file, int firstCh, int lineNumber) {
     int c = firstCh;
     char digit[200];
-    size_t x = 0;
+    int x = 0;
     Token token;
     token.category = CAT_LITERAL;
     token.tokenValue = L_BILANG_LITERAL;
@@ -286,25 +309,24 @@ Token digitChecker(FILE *file, int firstCh, int lineNumber) {
 }
 
 Token identifierChecker(FILE *file, int firstCh, int lineNumber) {
-    int c = firstCh;                     // use int for fgetc/EOF
     char identifier[200];
     size_t x = 0;
 
-    if (c == EOF) return make_token(CAT_UNKNOWN, 0, "", lineNumber);
-    if (!isalpha((unsigned char)c)) return make_token(CAT_UNKNOWN, 0, "", lineNumber);
-    if (isspace(fgetsc(file))) return make_token(CAT_LITERAL, L_KWERDAS_LITERAL, fgetsc(file), lineNumber);
-    // Read and collect identifier chars, starting with firstCh
+    // Add the first character
+    identifier[x++] = (char)firstCh;
+    
+    int c = fgetc(file);
+    // Read and collect identifier chars
     while (c != EOF && (isalnum((unsigned char)c) || c == '_') && x + 1 < sizeof(identifier)) {
         identifier[x++] = (char)c;
-        c = fgetc(file);     // get next char (may be EOF or a non-identifier)
+        c = fgetc(file);
     }
 
     identifier[x] = '\0';
 
-    // push back the non-identifier char so lexer can handle it
+    // push back the last non-identifier char
     if (c != EOF) ungetc(c, file);
 
     return make_token(CAT_LITERAL, L_IDENTIFIER, identifier, lineNumber);
-
 }
 
