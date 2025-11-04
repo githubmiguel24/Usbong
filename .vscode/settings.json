@@ -58,7 +58,8 @@
   "C_Cpp_Runner.msvcSecureNoWarnings": false,
   "files.associations": {
     ".fantomasignore": "ignore",
-    "lexer.h": "c"
+    "lexer.h": "c",
+    "stdio.h": "c"
   },
   "C_Cpp.default.compilerPath": "C:/MinGW/bin/gcc.exe"
 }
