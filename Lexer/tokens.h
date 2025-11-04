@@ -98,11 +98,11 @@ typedef enum {
 //Tokens for literals category:
 typedef enum {
     L_IDENTIFIER,
-    L_INT_LITERAL,
-    L_FLOAT_LITERAL,
-    L_STRING_LITERAL,
-    L_CHAR_LITERAL,
-    L_BOOL_LITERAL  // (Tama, Mali)
+    L_BILANG_LITERAL,
+    L_LUTANG_LITERAL,
+    L_KWERDAS_LITERAL,
+    L_TITIK_LITERAL,
+    L_BULYAN_LITERAL  // (Tama, Mali)
 } LiteralToken;
 
 

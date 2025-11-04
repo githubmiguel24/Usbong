@@ -1,1 +1,5 @@
-bilang x = 35; 
+bilang _y = 12;
+lutang x = y++; 
+if (x || y == 10){
+    ani(x);
+}
