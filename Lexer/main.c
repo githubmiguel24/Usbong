@@ -123,13 +123,16 @@ void lexer (FILE *file) {
         if (c == '\n') {
             lineNumber++;
         }
+        if (isspace((unsigned char)c)) {
+            // Ignore whitespace
+        }
         if(c == ';') {
             tok = make_token(CAT_DELIMITER, D_SEMICOLON, ";", lineNumber);
             produced = true;
         } else if (c == '{') {
             tok = make_token(CAT_DELIMITER, D_LBRACE, "{", lineNumber);
             produced = true;
-        } else if (c == '}') {
+        }else if (c == '}') {
             tok = make_token(CAT_DELIMITER, D_RBRACE, "}", lineNumber);
             produced = true;
         } else if (c== '(') {
@@ -141,19 +144,26 @@ void lexer (FILE *file) {
         } else if(c == '-'){
             tok = make_token(CAT_OPERATOR, O_MINUS, "-", lineNumber);
             produced = true;
-        } else if (c == '+'){
+        }else if (c == '+'){
             tok = make_token(CAT_OPERATOR, O_PLUS, "+", lineNumber);
             produced = true;
         } else if (c == '*'){
             tok = make_token(CAT_OPERATOR, O_MULTIPLY, "*", lineNumber);
             produced = true;
         } else if (c == '/'){
-            tok = make_token(CAT_OPERATOR, O_DIVIDE, "/", lineNumber);
-            produced = true;
-        } else if (c == '='){
-            tok = make_token(CAT_OPERATOR, O_ASSIGN, "=", lineNumber);
-            produced = true;
-        } else if (c == ','){
+            int next = fgetc(file);
+            if(next == '/'){
+                tok = make_token(CAT_COMMENT, C_SINGLE_LINE, "//", lineNumber);
+                produced = true;
+            }else if(next == '*'){ 
+                tok = make_token(CAT_COMMENT, C_MULTI_LINE, "/*", lineNumber);
+                produced = true;
+            } else {
+                ungetc(next, file);
+                tok = make_token(CAT_OPERATOR, O_DIVIDE, "/", lineNumber);
+                produced = true;
+            }
+        }else if (c == ','){
             tok = make_token(CAT_DELIMITER, D_COMMA, ",", lineNumber);
             produced = true;
         } else if (c == '.'){
@@ -171,12 +181,28 @@ void lexer (FILE *file) {
         }else if (c ==']'){
             tok = make_token(CAT_DELIMITER, D_RBRACKET, "]", lineNumber);
             produced = true;  
-        }else if (c == '&'  && fgetc(file) == '&'){
-            tok = make_token(CAT_OPERATOR, O_AND, "&&", lineNumber);
-            produced = true;
-        }else if (c == '|' && fgetc(file) == '|'){
-            tok = make_token(CAT_OPERATOR, O_OR, "||", lineNumber);
-            produced = true;
+        }else if (c == '&'){
+            int next = fgetc(file);
+            if(next == '&'){
+                tok = make_token(CAT_OPERATOR, O_AND, "&&", lineNumber);
+                produced = true;
+            }else { 
+                ungetc(next, file); 
+                char lex[2] = {c, '\0' };
+                tok = make_token(CAT_UNKNOWN, 0, lex, lineNumber);
+                produced = true;
+            }
+        } else if (c == '|'){
+            int next = fgetc(file);
+            if(next == '|'){
+                tok = make_token(CAT_OPERATOR, O_OR, "||", lineNumber);
+                produced = true;
+            }else { 
+                ungetc(next, file); 
+                char lex[2] = { c, '\0' };
+                tok = make_token(CAT_UNKNOWN, 0, lex, lineNumber);
+                produced = true;
+            }
         }else if (c == '!'){
             tok = make_token(CAT_OPERATOR, O_NOT, "!", lineNumber);
             produced = true;
@@ -186,11 +212,17 @@ void lexer (FILE *file) {
         }else if (c == '<'){
             tok = make_token(CAT_OPERATOR, O_LESS, "<", lineNumber);
             produced = true;
-        } else if (c == '=' &&  fgetc(file) == '='){
-            tok = make_token(CAT_OPERATOR, O_EQUAL, "==", lineNumber);
-            produced = true;
-        } else if (isspace((unsigned char)c)) {
-            // Ignore whitespace
+        } else if (c == '='){
+             int next = fgetc(file);
+            if(next == '='){
+                tok = make_token(CAT_OPERATOR, O_EQUAL, "==", lineNumber);
+                produced = true;
+            }else { 
+                ungetc(next, file); 
+                char lex[2] = {c, '\0' };
+                tok = make_token(CAT_OPERATOR, O_ASSIGN, "=", lineNumber);
+                produced = true;
+            }
         } else if (isdigit((unsigned char)c)){
                 Token tnum = digitChecker(file, current, lineNumber);
                 print_token(&tnum);
@@ -260,7 +292,7 @@ Token identifierChecker(FILE *file, int firstCh, int lineNumber) {
 
     if (c == EOF) return make_token(CAT_UNKNOWN, 0, "", lineNumber);
     if (!isalpha((unsigned char)c)) return make_token(CAT_UNKNOWN, 0, "", lineNumber);
-
+    if (isspace(fgetsc(file))) return make_token(CAT_LITERAL, L_KWERDAS_LITERAL, fgetsc(file), lineNumber);
     // Read and collect identifier chars, starting with firstCh
     while (c != EOF && (isalnum((unsigned char)c) || c == '_') && x + 1 < sizeof(identifier)) {
         identifier[x++] = (char)c;
