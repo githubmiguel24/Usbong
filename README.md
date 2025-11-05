@@ -10,7 +10,5 @@ flexible and rooted in clarity. It encourages programmers to grow their logic on
 HOW TO RUN
 
 in terminal type:
-1. gcc main.c -o myProgram
-
-then type: 
-./myProgram samp.usb
+1. gcc main.c -o myProgram,wordhash.c, 
+2. ./myProgram samp.usb
