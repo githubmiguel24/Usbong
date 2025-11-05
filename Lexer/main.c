@@ -234,29 +234,30 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 tok = makeToken(CAT_OPERATOR, O_DIVIDE, "/", lineNumber);
                 produced = true;
             }
-        }else if (c == '\'') {
-            char nextCh = (char)fgetc(file);
-            if (isalpha((unsigned char)nextCh)|| isdigit((unsigned char)nextCh)) {
-                //for character literals ('a', 'b', ...)
-                char lex[2] = {nextCh, '\0'};
-                tok = makeToken(CAT_LITERAL, L_TITIK_LITERAL, lex, lineNumber);
-                
-                //check for closing quote
-                int closeQuote = fgetc(file);
-                if (closeQuote != '\'') {
-                    ungetc(closeQuote, file);
-                    tok = makeToken(CAT_UNKNOWN, 0, lex, lineNumber);
-                }
-                produced = true;
-            } else {
-        // Not a valid character literal, treat as delimiter
-                ungetc(nextCh, file);
-                tok = makeToken(CAT_DELIMITER, D_SQUOTE, "\'", lineNumber);
-                produced = true;
+        }else if (c == '\"') {
+            char kwerdas[256]; 
+            int i = 0;
+            int nextCh = fgetc(file);
+
+            //check until another double quote or EOF
+            while (nextCh != EOF && nextCh != '\"' && i < sizeof(kwerdas) - 1) {
+                kwerdas[i++] = (char)nextCh;
+                nextCh = fgetc(file);
             }
+
+            kwerdas[i] = '\0'; // null-terminate
+
+            if (nextCh != '\"') {
+                // no more quote found, invalid token
+                tok = makeToken(CAT_UNKNOWN, 0, kwerdas, lineNumber);
+            } else {
+                // found another quote, create KWERDAS literal token
+                tok = makeToken(CAT_LITERAL, L_KWERDAS_LITERAL, kwerdas, lineNumber);
+            }
+            produced = true;
         } else if (c == '\"') {
-        tok = makeToken(CAT_DELIMITER, D_QUOTE, "\"", lineNumber);
-        produced = true;
+            tok = makeToken(CAT_DELIMITER, D_QUOTE, "\"", lineNumber);
+            produced = true;
         }else if (c == ','){
             tok = makeToken(CAT_DELIMITER, D_COMMA, ",", lineNumber);
             produced = true;

@@ -12,3 +12,9 @@ y          | L_IDENTIFIER
 +          | O_PLUS
 +          | O_PLUS
 ;          | D_SEMICOLON
+char          | L_IDENTIFIER
+[          | D_LBRACKET
+30          | L_BILANG_LITERAL
+]          | D_RBRACKET
+=          | O_ASSIGN
+STRING THIS          | L_KWERDAS_LITERAL

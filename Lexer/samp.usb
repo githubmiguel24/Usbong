@@ -1,2 +1,3 @@
 bilang _y = 12;
 lutang x = y++; 
+char [30] = "STRING THIS"
