@@ -4,6 +4,7 @@
 #include "tokens.h"
 #include <ctype.h>
 #include <stdbool.h>
+#include "wordhash.h"
 
 // func prototypes
 void lexer(FILE *file, FILE *symbolFileAppend);
@@ -19,7 +20,7 @@ int main(int argc, char *argv[]) {
         printf("proper input: ./programName <filename.usb>", argv[0]);
         return EXIT_FAILURE;
     }
-
+    initialize_table();
     const char *filename = argv[1];
     if (checkExtension(filename) == 0) {
         printf("Error: File must have .usb extension\n");
@@ -104,10 +105,60 @@ static const char *token_value_name(const Token *t) {
                 default: return "L_UNKNOWN";
             }
 
-        case CAT_KEYWORD: return "CAT_KEYWORD";
-        case CAT_RESERVED: return "CAT_RESERVED";
-        case CAT_NOISEWORD: return "CAT_NOISEWORD";
-        case CAT_COMMENT: return "CAT_COMMENT";
+         case CAT_KEYWORD:
+            switch (t->tokenValue) {
+                case K_ANI: return "K_ANI";
+                case K_TANIM: return "K_TANIM";
+                case K_PARA: return "K_PARA";
+                case K_HABANG: return "K_HABANG";
+                case K_KUNG: return "K_KUNG";
+                case K_KUNDI: return "K_KUNDI";
+                case K_KUNDIMAN: return "K_KUNDIMAN";
+                case K_GAWIN: return "K_GAWIN";
+                case K_TIBAG: return "K_TIBAG";
+                case K_TULOY: return "K_TULOY";
+                case K_PANGKAT: return "K_PANGKAT";
+                case K_STATIK: return "K_STATIK";
+                case K_PRIBADO: return "K_PRIBADO";
+                case K_PROTEKTADO: return "K_PROTEKTADO";
+                case K_PUBLIKO: return "K_PUBLIKO";
+                default: return "K_UNKNOWN";
+            };
+
+        case CAT_RESERVED:
+            switch (t->tokenValue) {
+                case R_TAMA: return "R_TAMA";
+                case R_MALI: return "R_MALI";
+                case R_UGAT: return "R_UGAT";
+                case R_BALIK: return "R_BALIK";
+                case R_BILANG: return "R_BILANG";
+                case R_KWERDAS: return "R_KWERDAS";
+                case R_TITIK: return "R_TITIK";
+                case R_LUTANG: return "R_LUTANG";
+                case R_BULYAN: return "R_BULYAN";
+                case R_DOBLE: return "R_DOBLE";
+                case R_WALA: return "R_WALA";
+                default: return "R_UNKNOWN";
+            };
+
+        case CAT_NOISEWORD:
+            switch (t->tokenValue) {
+                case N_NG: return "N_NG";
+                case N_AY: return "N_AY";
+                case N_BUNGA: return "N_BUNGA";
+                case N_WAKAS: return "N_WAKAS";
+                case N_SA: return "N_SA";
+                case N_ANG: return "N_ANG";
+                case N_MULA: return "N_MULA";
+                case N_ITAKDA: return "N_ITAKDA";
+                default: return "N_UNKNOWN";
+            };
+         case CAT_COMMENT:
+            switch (t->tokenValue) {
+                case C_SINGLE_LINE: return "C_SINGLE_LINE";
+                case C_MULTI_LINE: return "C_MULTI_LINE";
+                default: return "C_UNKNOWN";
+            }
         default: return "UNKNOWN_CATEGORY";
     }
 }
@@ -335,8 +386,8 @@ Token identifierChecker(FILE *file, int firstCh, int lineNumber) {
     //inpt first char to array
     identifier[x++] = (char)firstCh;
     
-    int c = fgetc(file);
-    // Read and collect identifier chars
+    int c = fgetc(file);//get next char
+    
     while (c != EOF && (isalnum((unsigned char)c) || c == '_') && x + 1 < sizeof(identifier)) {
         identifier[x++] = (char)c;
         c = fgetc(file);
@@ -344,8 +395,15 @@ Token identifierChecker(FILE *file, int firstCh, int lineNumber) {
 
     identifier[x] = '\0';
 
-    // push back the last non-identifier char
+    //last char is not part of identifier, so push back
     if (c != EOF) ungetc(c, file);
 
-    return makeToken(CAT_LITERAL, L_IDENTIFIER, identifier, lineNumber);
+    HashEntry *entry = hashLookUp(identifier);
+
+    if (entry) {
+        return makeToken(entry->category, entry->tokenValue, identifier, lineNumber);
+    }else {
+        return makeToken(CAT_LITERAL, L_IDENTIFIER, identifier, lineNumber);
+    }
+
 }

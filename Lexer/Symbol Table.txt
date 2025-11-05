@@ -1,0 +1,14 @@
+Lexeme           | Token Name
+bilang          | R_BILANG
+_          | UNKNOWN_CATEGORY
+y          | L_IDENTIFIER
+=          | O_ASSIGN
+12          | L_BILANG_LITERAL
+;          | D_SEMICOLON
+lutang          | R_LUTANG
+x          | L_IDENTIFIER
+=          | O_ASSIGN
+y          | L_IDENTIFIER
++          | O_PLUS
++          | O_PLUS
+;          | D_SEMICOLON

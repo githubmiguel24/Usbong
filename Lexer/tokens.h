@@ -1,4 +1,5 @@
-
+#ifndef TOKENS_H
+#define TOKENS_H
 //Category
 typedef enum {
     CAT_KEYWORD,
@@ -11,7 +12,6 @@ typedef enum {
     CAT_UNKNOWN
 } TokenCategory;
 
-//Tokens within each category:
 
 //Tokens for keywords category:
 typedef enum {
@@ -119,3 +119,6 @@ typedef struct {
     char* lexeme;        // The actual string from the source code
     int lineNumber;    // Line number in source code
 } Token;
+
+
+#endif 
