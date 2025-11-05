@@ -6,3 +6,11 @@ through code. Usbong is rooted in the theme of growth and learning, a nurturing 
 grow naturally. Usbong budded from the languages C and  Java, taking in features such as a concise set of control structures and keyword library, 
 as well as well-defined expression evaluation shaped into a simple, cohesive design. These features all work together to create a language that is 
 flexible and rooted in clarity. It encourages programmers to grow their logic one line of code at a time, hence dubbed "Usbong: Grow your logic".
+
+HOW TO RUN
+
+in terminal type:
+1. gcc main.c -o myProgram
+
+then type: 
+./myProgram samp.usb
