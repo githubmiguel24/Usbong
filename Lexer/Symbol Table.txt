@@ -1,7 +1,6 @@
 Lexeme           | Token Name
 bilang          | R_BILANG
-_          | UNKNOWN_CATEGORY
-y          | L_IDENTIFIER
+_y          | UNKNOWN_CATEGORY
 =          | O_ASSIGN
 12          | L_BILANG_LITERAL
 ;          | D_SEMICOLON
@@ -12,9 +11,20 @@ y          | L_IDENTIFIER
 +          | O_PLUS
 +          | O_PLUS
 ;          | D_SEMICOLON
-char          | L_IDENTIFIER
+lutang          | R_LUTANG
+z          | L_IDENTIFIER
+=          | O_ASSIGN
+12.456          | L_LUTANG_LITERAL
+;          | D_SEMICOLON
+titik          | R_TITIK
+a          | L_IDENTIFIER
+=          | O_ASSIGN
+'          | D_SQUOTE
+kwerdas          | R_KWERDAS
+kwer          | L_IDENTIFIER
 [          | D_LBRACKET
 30          | L_BILANG_LITERAL
 ]          | D_RBRACKET
 =          | O_ASSIGN
 STRING THIS          | L_KWERDAS_LITERAL
+;          | D_SEMICOLON

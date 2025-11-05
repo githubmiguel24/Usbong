@@ -1,3 +1,6 @@
 bilang _y = 12;
 lutang x = y++; 
-char [30] = "STRING THIS"
+lutang z = 12.456;
+titik a = '
+kwerdas kwer[30] = "STRING THIS";
+

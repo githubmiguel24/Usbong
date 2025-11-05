@@ -116,7 +116,7 @@ typedef enum {
 typedef struct {
     TokenCategory category;
     int tokenValue;          // Holds actual enum value from KeywordToken, OperatorToken, etc.
-    char* lexeme;        // The actual string from the source code
+    char* lexeme;         // The actual string from the source code
     int lineNumber;    // Line number in source code
 } Token;
 
