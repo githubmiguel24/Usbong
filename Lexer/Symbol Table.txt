@@ -20,6 +20,12 @@ titik          | R_TITIK
 a          | L_IDENTIFIER
 =          | O_ASSIGN
 '          | D_SQUOTE
+lutang          | R_LUTANG
+12          | L_BILANG_LITERAL
+a          | L_IDENTIFIER
+=          | O_ASSIGN
+123          | L_BILANG_LITERAL
+;          | D_SEMICOLON
 kwerdas          | R_KWERDAS
 kwer          | L_IDENTIFIER
 [          | D_LBRACKET

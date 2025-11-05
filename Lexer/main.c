@@ -5,11 +5,65 @@
 #include <ctype.h>
 #include <stdbool.h>
 #include "wordhash.h"
+//States
+typedef enum {
+    S_START,   //Start state
+
+    //Words without quotes(" ")
+    S_IDENTIFIER,       
+    S_KEYWORD,  // Note: These are final states, decided *after* S_IDENTIFIER
+    S_RESERVE,  // Note: These are final states, decided *after* S_IDENTIFIER
+    S_NOISE,    // Note: These are final states, decided *after* S_IDENTIFIER
+
+    //Numbers
+    S_NUMBER_BILANG,
+    S_NUMBER_LUTANG,
+
+    //Strings & characters
+    S_KWERDAS_HEAD,   //for double quote start
+    S_KWERDAS_BODY,    //main string
+    S_KWERDAS_TAIL,    //last double quote
+
+    //Strings & characters
+    S_TITIK_HEAD,   //for single quote start
+    S_TITIK_BODY,    //main charatcer 
+    S_TITIK_TAIL,    //last single quote
+
+    // Operators
+    S_OP_PLUS,         // + (Final State)
+    S_OP_MINUS,        // - (Final State)
+    S_OP_MULTIPLY,     // * (Final State)
+    S_OP_DIVIDE_HEAD,      // /  (may lead to comments)
+    S_OP_DIVIDE_TAIL,  // /? → // or /* or / (This state is unused, logic is in S_OP_DIVIDE_HEAD)
+    S_OP_ASSIGN_HEAD,      // =
+    S_OP_ASSIGN_TAIL,  // == (Final State)
+    S_OP_NOT_HEAD,         // !
+    S_OP_NOT_TAIL,     // != or ! (Final State)
+    S_OP_LESS_HEAD,        // <
+    S_OP_LESS_TAIL,    // <= or < (Final State)
+    S_OP_GREATER_HEAD,     // >
+    S_OP_GREATER_TAIL, // >= or > (Final State)
+    S_OP_AND_HEAD,     //&
+    S_OP_AND_TAIL,     // && (Final State)
+    S_OP_OR_HEAD,      // |  
+    S_OP_OR_TAIL,      // || (Final State)
+
+    //Comments
+    S_COMMENT_SINGLE,  // //
+    S_COMMENT_MULTI_HEAD,   // /*
+    S_COMMENT_MULTI_TAIL, // checking for */
+
+    // Delimiters
+    S_DELIMITER,       // ( ) { } [ ] , . ; etc. (Final State)
+
+    // End / Unknown
+    S_UNKNOWN,
+    S_DONE // (Unused in this implementation)
+} LexerState;
+
 
 // func prototypes
 void lexer(FILE *file, FILE *symbolFileAppend);
-Token digitChecker(FILE *file, int firstCh, int lineNumber);
-Token identifierChecker(FILE *file, int firstCh, int lineNumber);
 Token makeToken(TokenCategory cat, int tokenValue, const char *lexeme, int lineNumber);
 void printToken(FILE *file, Token *t);
 int checkExtension(const char *filename);
@@ -32,7 +86,7 @@ int main(int argc, char *argv[]) {
             return EXIT_FAILURE;
         }else {
             printf("File opened successfully: %s\n", filename);
-            fopen("Symbol Table.txt", "w");
+            fopen("Symbol Table.txt", "w"); // Clear the file
             FILE *symbolFileAppend;
             symbolFileAppend = fopen("Symbol Table.txt", "a");
             fprintf(symbolFileAppend, "Lexeme           | Token Name\n");
@@ -42,6 +96,489 @@ int main(int argc, char *argv[]) {
             return EXIT_SUCCESS;
         }
     }
+}
+
+// Lexer function that reads characters from the file and produces Token structs
+void lexer (FILE *file, FILE *symbolFileAppend) {
+   
+    LexerState currentState = S_START;
+    char lexemeBuffer[1024]; // Buffer for building the current lexeme
+    int lexemeIndex = 0;
+    int lineNumber = 1;
+    int tokenStartLine = 1; // Line number where the current token started
+    
+    int c; // Current character
+
+    //FA LOOP START --> reads/chcks 1 character per iteration.
+    while (true) { // Loop until EOF is explicitly handled
+        
+        c = fgetc(file); // Get next char
+        Token tok;
+        switch (currentState) {
+            
+            // --- START STATE ---
+            // This is the main router. It decides which state to go to
+            // based on the first character of a new token.
+            case S_START:
+                lexemeIndex = 0; // Reset buffer
+                memset(lexemeBuffer, 0, sizeof(lexemeBuffer));
+                tokenStartLine = lineNumber;
+
+                if (c == EOF) {
+                    return; // get out of loop if 
+                }
+
+                if (isspace(c)) { //ignore white spaces
+                    if (c == '\n') {
+                        lineNumber++;
+                    }
+                    // Stay in S_START, loop again
+                    continue; 
+                }
+
+                //if not space: input current char
+                lexemeBuffer[lexemeIndex++] = (char)c;
+
+
+
+                // --- Transitions from S_START ---
+                if (isalpha(c)) {
+                    currentState = S_IDENTIFIER;
+                } else if(c == '_'){
+                    currentState = S_UNKNOWN; // Per your S_START logic
+                } else if (isdigit(c)) {
+                    currentState = S_NUMBER_BILANG;
+                } else if (c == '"') {
+                    currentState = S_KWERDAS_HEAD;
+                } else if (c == '\'') {
+                    currentState = S_TITIK_HEAD;
+                } else if (c == '/') {
+                    currentState = S_OP_DIVIDE_HEAD;
+                } else if (c == '&') {
+                    currentState = S_OP_AND_HEAD;
+                } else if (c == '|') {
+                    currentState = S_OP_OR_HEAD;
+                } else if (c == '=') {
+                    currentState = S_OP_ASSIGN_HEAD;
+                } else if (c == '!') {
+                    currentState = S_OP_NOT_HEAD;
+                } else if (c == '<') {
+                    currentState = S_OP_LESS_HEAD;
+                } else if (c == '>') {
+                    currentState = S_OP_GREATER_HEAD;
+                } else {
+                    //Single character lexemes are auto final state
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    switch (c) {
+                        case '+': tok = makeToken(CAT_OPERATOR, O_PLUS, lexemeBuffer, tokenStartLine); break;
+                        case '-': tok = makeToken(CAT_OPERATOR, O_MINUS, lexemeBuffer, tokenStartLine); break;
+                        case '*': tok = makeToken(CAT_OPERATOR, O_MULTIPLY, lexemeBuffer, tokenStartLine); break;
+                        case '^': tok = makeToken(CAT_OPERATOR, O_POW, lexemeBuffer, tokenStartLine); break;
+                        case '%': tok = makeToken(CAT_OPERATOR, O_MODULO, lexemeBuffer, tokenStartLine); break;
+                        
+                        case ';': tok = makeToken(CAT_DELIMITER, D_SEMICOLON, lexemeBuffer, tokenStartLine); break;
+                        case '{': tok = makeToken(CAT_DELIMITER, D_LBRACE, lexemeBuffer, tokenStartLine); break;
+                        case '}': tok = makeToken(CAT_DELIMITER, D_RBRACE, lexemeBuffer, tokenStartLine); break;
+                        case '(': tok = makeToken(CAT_DELIMITER, D_LPAREN, lexemeBuffer, tokenStartLine); break;
+                        case ')': tok = makeToken(CAT_DELIMITER, D_RPAREN, lexemeBuffer, tokenStartLine); break;
+                        case '[': tok = makeToken(CAT_DELIMITER, D_LBRACKET, lexemeBuffer, tokenStartLine); break;
+                        case ']': tok = makeToken(CAT_DELIMITER, D_RBRACKET, lexemeBuffer, tokenStartLine); break;
+                        case ',': tok = makeToken(CAT_DELIMITER, D_COMMA, lexemeBuffer, tokenStartLine); break;
+                        case '.': tok = makeToken(CAT_DELIMITER, D_DOT, lexemeBuffer, tokenStartLine); break;
+                        
+                        default:
+                            tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
+                            break;
+                    }
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; // Reset for next token
+                }
+                break; // End of S_START
+
+            //l
+            
+            // --- IDENTIFIER STATE ---
+            case S_IDENTIFIER:
+                if (isalnum(c) || c == '_') {
+                    // Keep consuming characters and stay in this state
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                } else {
+                    // --- FINAL STATE (Identifier/Keyword) ---
+                    if (c != EOF) 
+                    ungetc(c, file); // Put it back
+                    lexemeBuffer[lexemeIndex] = '\0'; // Finalize
+
+                    HashEntry *entry = hashLookUp(lexemeBuffer);
+                    if (entry) {
+                        tok = makeToken(entry->category, entry->tokenValue, lexemeBuffer, tokenStartLine);
+                    } else {
+                        tok = makeToken(CAT_LITERAL, L_IDENTIFIER, lexemeBuffer, tokenStartLine);
+                    }
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; // Reset
+                }
+                break; // End of S_IDENTIFIER
+
+            // --- NUMBER STATES ---
+            case S_NUMBER_BILANG:
+                if (isdigit(c)) {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    // Stay in S_NUMBER_BILANG
+                } else if (c == '.') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_NUMBER_LUTANG; // Transition
+                } else {
+                    // --- FINAL STATE (BILANG Literal) ---
+                    if (c != EOF){
+                        ungetc(c, file);
+                    }
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_LITERAL, L_BILANG_LITERAL, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; // Reset
+                }
+                break; 
+
+            case S_NUMBER_LUTANG:
+                if (isdigit(c)) {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                } else {
+                    if (c != EOF)
+                        ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    //check if . is last number (error checking)
+                    if (lexemeBuffer[lexemeIndex - 1] == '.') { // e.g., "123."
+                        tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
+                    } else {
+                        tok = makeToken(CAT_LITERAL, L_LUTANG_LITERAL, lexemeBuffer, tokenStartLine);
+                    }
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; // Reset
+                }
+            break; 
+
+            // --- STRING STATES ---
+            case S_KWERDAS_HEAD: //previous input is double quotes
+                lexemeIndex = 0; // Reset buffer to *not* include the quotes
+                if (c == '"') {//means end of string
+                    currentState = S_KWERDAS_TAIL; // Go to TAIL state
+                    continue; // Re-process this quote in the TAIL state
+                }
+                if (c == EOF || c == '\n') {
+                    if (c != EOF) 
+                        ungetc(c, file);//error checking
+                        lexemeBuffer[0] = '"'; // Show the unterminated quote
+                        lexemeBuffer[1] = '\0';
+                        tok = makeToken(CAT_DELIMITER, D_QUOTE, lexemeBuffer, tokenStartLine);
+                        printToken(symbolFileAppend, &tok);
+                        //current state is final state therefore go to start state
+                        currentState = S_START;
+                    if(c == '\n') 
+                        lineNumber++;
+                } else {
+                    //not eof or next line therefore part of the kwerdas
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_KWERDAS_BODY;
+                }
+            break;
+
+            case S_KWERDAS_BODY:
+                if (c == '"') {
+                    currentState = S_KWERDAS_TAIL; //second quote --> end of string
+                } else if (c == EOF || c == '\n') {
+                    //error check
+                    if (c != EOF) 
+                        ungetc(c, file);
+                        lexemeBuffer[lexemeIndex] = '\0';
+                        tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine); // Unterminated string
+                        printToken(symbolFileAppend, &tok);
+                        currentState = S_START; //go to next lexeme
+                    if(c == '\n') 
+                        lineNumber++;
+                } else {
+                    // Stay in body, consume char
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                }
+            break;
+
+            case S_KWERDAS_TAIL: //input: second " (final state)
+                if (c != EOF) 
+                    ungetc(c, file); //rewind to prev char
+                    lexemeBuffer[lexemeIndex] = '\0'; // Finalize the *body*
+                    tok = makeToken(CAT_LITERAL, L_KWERDAS_LITERAL, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; //move on to next lexeme
+            break;
+
+            // for potential chars
+            case S_TITIK_HEAD: // Saw '
+                lexemeIndex = 0; // Reset buffer to *not* include the quotes
+                if (c == '\'' || c == EOF || c == '\n') {
+                    //error or final state
+                    if (c != EOF)
+                        ungetc(c, file);
+                        lexemeBuffer[0] = '\'';
+                        lexemeBuffer[1] = '\0';
+                        Token tok = makeToken(CAT_DELIMITER, D_SQUOTE, lexemeBuffer, tokenStartLine); 
+                        printToken(symbolFileAppend, &tok);
+                        currentState = S_START;
+                    if(c == '\n') 
+                        lineNumber++;
+                } else {
+                    // this mean character is the next input
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_TITIK_BODY;
+                }
+                break;
+            
+            case S_TITIK_BODY: // Saw char 
+                if (c == '\'') {
+                    currentState = S_TITIK_TAIL; //send to final state
+                } else {
+                    //error check
+                    if (c != EOF) 
+                        ungetc(c, file); 
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    //go to next lexeme
+                    currentState = S_START;
+                }
+                break;
+
+            case S_TITIK_TAIL: //saw final ' --> final state
+                if (c != EOF) 
+                    ungetc(c, file);
+                lexemeBuffer[lexemeIndex] = '\0';
+                tok = makeToken(CAT_LITERAL, L_TITIK_LITERAL, lexemeBuffer, tokenStartLine);
+                printToken(symbolFileAppend, &tok);
+                currentState = S_START;
+                break;
+            
+            // --- OPERATOR/COMMENT STATES ---
+            case S_OP_DIVIDE_HEAD: // Saw /
+                if (c == '/') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_COMMENT_SINGLE;
+                } else if (c == '*') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_COMMENT_MULTI_HEAD;
+                } else {
+                    // --- FINAL STATE (DIVIDE Operator) ---
+                    if (c != EOF) ungetc(c, file); 
+                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "/"
+                    tok = makeToken(CAT_OPERATOR, O_DIVIDE, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                }
+                break; 
+
+            case S_COMMENT_SINGLE:
+                if (c == '\n' || c == EOF) {
+                    // --- FINAL STATE (Single-Line Comment) ---
+                    if (c != EOF) ungetc(c, file); 
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_COMMENT, C_SINGLE_LINE, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else {
+                    lexemeBuffer[lexemeIndex++] = (char)c; // Consume
+                }
+                break;
+
+            case S_COMMENT_MULTI_HEAD:
+                if (c == '\n') 
+                lineNumber++;
+            
+                if (c == '*') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_COMMENT_MULTI_TAIL;
+                } else if (c == EOF) {
+                    // --- FINAL STATE (Error) ---
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine); // Unterminated comment
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; // Will be caught by EOF check
+                } else {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    // Stay in S_COMMENT_MULTI_HEAD
+                }
+                break; 
+
+            case S_COMMENT_MULTI_TAIL: // Saw /*...*
+                 if (c == '\n') 
+                 lineNumber++;
+                 
+                if (c == '/') {
+                    // --- FINAL STATE (Multi-Line Comment) ---
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_COMMENT, C_MULTI_LINE, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else if (c == '*') {
+                    lexemeBuffer[lexemeIndex++] = (char)c; // Saw another *, e.g. "/***"
+                    // Stay in S_COMMENT_MULTI_TAIL
+                } else if (c == EOF) {
+                     // --- FINAL STATE (Error) ---
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine); // Unterminated comment
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
+                } else {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_COMMENT_MULTI_HEAD; // Not a /, go back
+                }
+                break; 
+
+            case S_OP_AND_HEAD: // Saw &
+                if (c == '&') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    //final state
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_OPERATOR, O_AND, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else {
+                    // --- FINAL STATE (UNKNOWN) ---
+                    if (c != EOF) ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "&"
+                    tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
+                }
+                break;
+            
+            case S_OP_OR_HEAD: // Saw |
+                 if (c == '|') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    // --- FINAL STATE (OR Operator) ---
+                    // This is S_OP_OR_TAIL
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_OPERATOR, O_OR, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else {
+                    // --- FINAL STATE (UNKNOWN) ---
+                    if (c != EOF) ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "|"
+                    tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
+                }
+                break; 
+
+            case S_OP_ASSIGN_HEAD: // Saw =
+                if (c == '=') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    // --- FINAL STATE (EQUAL Operator) ---
+                    // This is S_OP_ASSIGN_TAIL
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_OPERATOR, O_EQUAL, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else {
+                    // --- FINAL STATE (ASSIGN Operator) ---
+                    if (c != EOF) ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "="
+                    tok = makeToken(CAT_OPERATOR, O_ASSIGN, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
+                }
+                break; 
+            
+            case S_OP_NOT_HEAD: // Saw !
+                if (c == '=') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    // --- FINAL STATE (NOT_EQUAL Operator) ---
+                    // This is S_OP_NOT_TAIL
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_OPERATOR, O_NOT_EQUAL, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else {
+                    // --- FINAL STATE (NOT Operator) ---
+                    if (c != EOF) ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "!"
+                    tok = makeToken(CAT_OPERATOR, O_NOT, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
+                }
+                break;
+
+            case S_OP_LESS_HEAD: // has <
+                if (c == '=') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    // --- FINAL STATE (LESS_EQ Operator) ---
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_OPERATOR, O_LESS_EQ, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else {
+                    // --- FINAL STATE (LESS Operator) ---
+                    if (c != EOF) ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "<"
+                    tok = makeToken(CAT_OPERATOR, O_LESS, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
+                }
+                break;
+
+            case S_OP_GREATER_HEAD: // Saw >
+                if (c == '=') {
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    // --- FINAL STATE (GREATER_EQ Operator) ---
+                    // This is S_OP_GREATER_TAIL
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_OPERATOR, O_GREATER_EQ, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else {
+                    // --- FINAL STATE (GREATER Operator) ---
+                    if (c != EOF) ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just ">"
+                    tok = makeToken(CAT_OPERATOR, O_GREATER, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
+                }
+                break;
+            
+            case S_UNKNOWN: // Saw '_' or other invalid char
+                if (isspace(c) || c == EOF || strchr("+-*/^%&|=!<>(){}[],.;", c)) {
+                    // --- FINAL STATE (UNKNOWN) ---
+                    if (c != EOF) ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0';
+                    tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
+                    if (c == '\n') lineNumber++; // Don't miss this
+                } else {
+                    // Keep consuming invalid chars
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                }
+                break;
+            
+            case S_KEYWORD:
+            case S_RESERVE:
+            case S_NOISE:
+            case S_OP_PLUS:
+            case S_OP_MINUS:
+            case S_OP_MULTIPLY:
+            case S_OP_DIVIDE_TAIL:
+            case S_OP_ASSIGN_TAIL:
+            case S_OP_NOT_TAIL:
+            case S_OP_LESS_TAIL:
+            case S_OP_GREATER_TAIL:
+            case S_OP_AND_TAIL:
+            case S_OP_OR_TAIL:
+            case S_DELIMITER:
+            case S_DONE:
+                fprintf(stderr, "Lexer Error: Entered unreachable state %d on line %d.\n", currentState, lineNumber);
+                currentState = S_START;
+                break;
+
+        } // end switch(currentState)
+    } // end while
 }
 
 //fn extension checker
@@ -180,169 +717,6 @@ Token makeToken(TokenCategory cat, int tokenValue, const char *lexeme, int lineN
     strcpy(t.lexeme, lexeme);
     t.lineNumber = lineNumber;
     return t;
-}
-
-// Lexer function that reads characters from the file and produces Token structs
-void lexer (FILE *file, FILE *symbolFileAppend) {
-   int current  = fgetc(file);
-   int lineNumber = 1;
-    while (current != EOF)
-    {
-        char c = (char) current;
-        Token tok;
-        bool produced = false;
-
-        if (c == '\n') {
-            lineNumber++;
-        }
-        if (isspace((unsigned char)c)) {
-            //ignore
-        } else if(c == ';') {
-            tok = makeToken(CAT_DELIMITER, D_SEMICOLON, ";", lineNumber);
-            produced = true;
-        } else if (c == '{') {
-            tok = makeToken(CAT_DELIMITER, D_LBRACE, "{", lineNumber);
-            produced = true;
-        }else if (c == '}') {
-            tok = makeToken(CAT_DELIMITER, D_RBRACE, "}", lineNumber);
-            produced = true;
-        } else if (c== '(') {
-            tok = makeToken(CAT_DELIMITER, D_LPAREN, "(", lineNumber);
-            produced = true;
-        } else if (c== ')') {
-            tok = makeToken(CAT_DELIMITER, D_RPAREN, ")", lineNumber);
-            produced = true;
-        } else if(c == '-'){
-            tok = makeToken(CAT_OPERATOR, O_MINUS, "-", lineNumber);
-            produced = true;
-        }else if (c == '+'){
-            tok = makeToken(CAT_OPERATOR, O_PLUS, "+", lineNumber);
-            produced = true;
-        } else if (c == '*'){
-            tok = makeToken(CAT_OPERATOR, O_MULTIPLY, "*", lineNumber);
-            produced = true;
-        } else if (c == '/'){
-            int next = fgetc(file);
-            if(next == '/'){
-                tok = makeToken(CAT_COMMENT, C_SINGLE_LINE, "//", lineNumber);
-                produced = true;
-            }else if(next == '*'){ 
-                tok = makeToken(CAT_COMMENT, C_MULTI_LINE, "/*", lineNumber);
-                produced = true;
-            } else {
-                ungetc(next, file);
-                tok = makeToken(CAT_OPERATOR, O_DIVIDE, "/", lineNumber);
-                produced = true;
-            }
-        }else if (c == '\"') {
-            char kwerdas[256]; 
-            int i = 0;
-            int nextCh = fgetc(file);
-
-            //check until another double quote or EOF
-            while (nextCh != EOF && nextCh != '\"' && i < sizeof(kwerdas) - 1) {
-                kwerdas[i++] = (char)nextCh;
-                nextCh = fgetc(file);
-            }
-
-            kwerdas[i] = '\0'; // null-terminate
-
-            if (nextCh != '\"') {
-                // no more quote found, invalid token
-                tok = makeToken(CAT_UNKNOWN, 0, kwerdas, lineNumber);
-            } else {
-                // found another quote, create KWERDAS literal token
-                tok = makeToken(CAT_LITERAL, L_KWERDAS_LITERAL, kwerdas, lineNumber);
-            }
-            produced = true;
-        } else if (c == '\"') {
-            tok = makeToken(CAT_DELIMITER, D_QUOTE, "\"", lineNumber);
-            produced = true;
-        }else if (c == ','){
-            tok = makeToken(CAT_DELIMITER, D_COMMA, ",", lineNumber);
-            produced = true;
-        } else if (c == '.'){
-            tok = makeToken(CAT_DELIMITER, D_DOT, ".", lineNumber);
-            produced = true;
-        } else if (c == '^'){
-            tok = makeToken(CAT_OPERATOR, O_POW, "^", lineNumber);
-            produced = true;
-        }else if (c == '%'){
-            tok = makeToken(CAT_OPERATOR, O_MODULO, "%", lineNumber);
-            produced = true;
-        }else if (c =='['){
-            tok = makeToken(CAT_DELIMITER, D_LBRACKET, "[", lineNumber);
-            produced = true;
-        }else if (c ==']'){
-            tok = makeToken(CAT_DELIMITER, D_RBRACKET, "]", lineNumber);
-            produced = true;  
-        }else if (c == '&'){
-            int next = fgetc(file);
-            if(next == '&'){
-                tok = makeToken(CAT_OPERATOR, O_AND, "&&", lineNumber);
-                produced = true;
-            }else { 
-                ungetc(next, file); 
-                char lex[2] = {c, '\0' };
-                tok = makeToken(CAT_UNKNOWN, 0, lex, lineNumber);
-                produced = true;
-            }
-        } else if (c == '|'){
-            int next = fgetc(file);
-            if(next == '|'){
-                tok = makeToken(CAT_OPERATOR, O_OR, "||", lineNumber);
-                produced = true;
-            }else { 
-                ungetc(next, file); 
-                char lex[2] = { c, '\0' };
-                tok = makeToken(CAT_UNKNOWN, 0, lex, lineNumber);
-                produced = true;
-            }
-        }else if (c == '!'){
-            tok = makeToken(CAT_OPERATOR, O_NOT, "!", lineNumber);
-            produced = true;
-        }else if (c == '>'){
-            tok = makeToken(CAT_OPERATOR, O_GREATER, ">", lineNumber);
-            produced = true;
-        }else if (c == '<'){
-            tok = makeToken(CAT_OPERATOR, O_LESS, "<", lineNumber);
-            produced = true;
-        } else if (c == '='){
-             int next = fgetc(file);
-            if(next == '='){
-                tok = makeToken(CAT_OPERATOR, O_EQUAL, "==", lineNumber);
-                produced = true;
-            }else { 
-                ungetc(next, file); 
-                char lex[2] = {c, '\0' };
-                tok = makeToken(CAT_OPERATOR, O_ASSIGN, "=", lineNumber);
-                produced = true;
-            }
-        } else if (isdigit((unsigned char)c)){
-                Token tnum = digitChecker(file, current, lineNumber);
-                printToken(symbolFileAppend, &tnum);
-                if (tnum.lexeme) free(tnum.lexeme);
-                current = fgetc(file);
-                continue;
-        } else if(isalpha((unsigned char)c)) {
-            Token tid = identifierChecker(file, current, lineNumber);
-            printToken(symbolFileAppend, &tid);
-            if (tid.lexeme) free(tid.lexeme);
-            current = fgetc(file);
-            continue;
-        } else {
-            char lex[2] = { c, '\0' };
-            tok = makeToken(CAT_UNKNOWN, 0, lex, lineNumber);
-            produced = true;
-        }
-
-        if (produced) {
-            printToken(symbolFileAppend, &tok);
-            
-        }
-
-        current = fgetc(file);
-    }
 }
 
 Token digitChecker(FILE *file, int firstCh, int lineNumber) {
