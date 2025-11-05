@@ -4,4 +4,5 @@ lutang z = 12.456;
 titik a = '
 lutang 12a = 123;
 kwerdas kwer[30] = "STRING THIS";
-
+//comment here
+/* comment this */

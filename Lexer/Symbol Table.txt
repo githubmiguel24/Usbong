@@ -33,3 +33,5 @@ kwer          | L_IDENTIFIER
 =          | O_ASSIGN
 STRING THIS          | L_KWERDAS_LITERAL
 ;          | D_SEMICOLON
+//comment here          | C_SINGLE_LINE
+/* comment this */          | C_MULTI_LINE

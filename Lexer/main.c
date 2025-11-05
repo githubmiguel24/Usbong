@@ -132,20 +132,17 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     if (c == '\n') {
                         lineNumber++;
                     }
-                    // Stay in S_START, loop again
+                    //Stay in S_START
                     continue; 
                 }
 
                 //if not space: input current char
                 lexemeBuffer[lexemeIndex++] = (char)c;
 
-
-
-                // --- Transitions from S_START ---
                 if (isalpha(c)) {
                     currentState = S_IDENTIFIER;
                 } else if(c == '_'){
-                    currentState = S_UNKNOWN; // Per your S_START logic
+                    currentState = S_UNKNOWN;
                 } else if (isdigit(c)) {
                     currentState = S_NUMBER_BILANG;
                 } else if (c == '"') {
@@ -193,22 +190,19 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     printToken(symbolFileAppend, &tok);
                     currentState = S_START; // Reset for next token
                 }
-                break; // End of S_START
+                break;
 
-            //l
-            
-            // --- IDENTIFIER STATE ---
+    
             case S_IDENTIFIER:
                 if (isalnum(c) || c == '_') {
                     // Keep consuming characters and stay in this state
                     lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_IDENTIFIER;
                 } else {
-                    // --- FINAL STATE (Identifier/Keyword) ---
                     if (c != EOF) 
-                    ungetc(c, file); // Put it back
-                    lexemeBuffer[lexemeIndex] = '\0'; // Finalize
-
-                    HashEntry *entry = hashLookUp(lexemeBuffer);
+                        ungetc(c, file); // Put it back
+                        lexemeBuffer[lexemeIndex] = '\0'; // Finalize
+                        HashEntry *entry = hashLookUp(lexemeBuffer);
                     if (entry) {
                         tok = makeToken(entry->category, entry->tokenValue, lexemeBuffer, tokenStartLine);
                     } else {
@@ -217,9 +211,9 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     printToken(symbolFileAppend, &tok);
                     currentState = S_START; // Reset
                 }
-                break; // End of S_IDENTIFIER
+                break;
 
-            // --- NUMBER STATES ---
+            //Numbers (BILANG & LUTANG) States
             case S_NUMBER_BILANG:
                 if (isdigit(c)) {
                     lexemeBuffer[lexemeIndex++] = (char)c;
@@ -259,12 +253,12 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 }
             break; 
 
-            // --- STRING STATES ---
+            //KWERDAS STATES
             case S_KWERDAS_HEAD: //previous input is double quotes
                 lexemeIndex = 0; // Reset buffer to *not* include the quotes
                 if (c == '"') {//means end of string
                     currentState = S_KWERDAS_TAIL; // Go to TAIL state
-                    continue; // Re-process this quote in the TAIL state
+                    continue; 
                 }
                 if (c == EOF || c == '\n') {
                     if (c != EOF) 
@@ -359,13 +353,15 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
             
             case S_OP_DIVIDE_HEAD: //prev input: /
                 if (c == '/') {
+                    //comment 
                     lexemeBuffer[lexemeIndex++] = (char)c;
                     currentState = S_COMMENT_SINGLE;
                 } else if (c == '*') {
+                    // commment 
                     lexemeBuffer[lexemeIndex++] = (char)c;
                     currentState = S_COMMENT_MULTI_HEAD;
                 } else {
-                    // --- FINAL STATE (DIVIDE Operator) ---
+                    //divide operator
                     if (c != EOF) ungetc(c, file); 
                     lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "/"
                     tok = makeToken(CAT_OPERATOR, O_DIVIDE, lexemeBuffer, tokenStartLine);
@@ -376,7 +372,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
 
             case S_COMMENT_SINGLE:
                 if (c == '\n' || c == EOF) {
-                    // --- FINAL STATE (Single-Line Comment) ---
+                    //single line
                     if (c != EOF) ungetc(c, file); 
                     lexemeBuffer[lexemeIndex] = '\0';
                     tok = makeToken(CAT_COMMENT, C_SINGLE_LINE, lexemeBuffer, tokenStartLine);
@@ -701,7 +697,7 @@ static const char *token_value_name(const Token *t) {
     }
 }
 
-// Print token as: lexeme | TOKEN_NAME
+//Print token as: lexeme | TOKEN_NAME
 void printToken(FILE *file, Token *t) {
     const char *lex;
     lex = t->lexeme;
@@ -718,68 +714,4 @@ Token makeToken(TokenCategory cat, int tokenValue, const char *lexeme, int lineN
     strcpy(t.lexeme, lexeme);
     t.lineNumber = lineNumber;
     return t;
-}
-
-Token digitChecker(FILE *file, int firstCh, int lineNumber) {
-    int c = firstCh;
-    char digit[300];
-    int x = 0;
-    Token token;
-    token.category = CAT_LITERAL;
-    token.tokenValue = L_BILANG_LITERAL;
-    bool hasDecimalPoint = false;
-    // Read digits and dots (mark invalid if multiple dots)
-    while (c != EOF && x + 1 < sizeof(digit) && (isdigit((unsigned char)c) || c == '.')) {
-        digit[x++] = (char)c;
-        if (c == '.') {
-            if (hasDecimalPoint) {
-                token.category = CAT_UNKNOWN; // mark invalid
-            } else {
-                hasDecimalPoint = true;
-                token.tokenValue = L_LUTANG_LITERAL;
-            }
-        }
-        c = fgetc(file);
-    }
-
-    // Null-terminate
-    digit[x] = '\0';
-
-    // push back last read non-number char
-    if (c != EOF) ungetc(c, file);
-
-    if (token.category == CAT_UNKNOWN || (hasDecimalPoint && digit[x-1] == '.')) {
-        return makeToken(CAT_UNKNOWN, 0, digit, lineNumber);
-    }
-
-    return makeToken(CAT_LITERAL, token.tokenValue, digit, lineNumber);
-}
-
-Token identifierChecker(FILE *file, int firstCh, int lineNumber) {
-    char identifier[200];
-    size_t x = 0;
-
-    //inpt first char to array
-    identifier[x++] = (char)firstCh;
-    
-    int c = fgetc(file);//get next char
-    
-    while (c != EOF && (isalnum((unsigned char)c) || c == '_') && x + 1 < sizeof(identifier)) {
-        identifier[x++] = (char)c;
-        c = fgetc(file);
-    }
-
-    identifier[x] = '\0';
-
-    //last char is not part of identifier, so push back
-    if (c != EOF) ungetc(c, file);
-
-    HashEntry *entry = hashLookUp(identifier);
-
-    if (entry) {
-        return makeToken(entry->category, entry->tokenValue, identifier, lineNumber);
-    }else {
-        return makeToken(CAT_LITERAL, L_IDENTIFIER, identifier, lineNumber);
-    }
-
 }

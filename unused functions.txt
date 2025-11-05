@@ -1,0 +1,65 @@
+
+//check if digit is lutang or bilang or invalid
+Token digitChecker(FILE *file, int firstCh, int lineNumber) {
+    int c = firstCh;
+    char digit[300];
+    int x = 0;
+    Token token;
+    token.category = CAT_LITERAL;
+    token.tokenValue = L_BILANG_LITERAL;
+    bool hasDecimalPoint = false;
+    // Read digits and dots (mark invalid if multiple dots)
+    while (c != EOF && x + 1 < sizeof(digit) && (isdigit((unsigned char)c) || c == '.')) {
+        digit[x++] = (char)c;
+        if (c == '.') {
+            if (hasDecimalPoint) {
+                token.category = CAT_UNKNOWN; // mark invalid
+            } else {
+                hasDecimalPoint = true;
+                token.tokenValue = L_LUTANG_LITERAL;
+            }
+        }
+        c = fgetc(file);
+    }
+
+    // Null-terminate
+    digit[x] = '\0';
+
+    // push back last read non-number char
+    if (c != EOF) ungetc(c, file);
+
+    if (token.category == CAT_UNKNOWN || (hasDecimalPoint && digit[x-1] == '.')) {
+        return makeToken(CAT_UNKNOWN, 0, digit, lineNumber);
+    }
+
+    return makeToken(CAT_LITERAL, token.tokenValue, digit, lineNumber);
+}
+
+Token identifierChecker(FILE *file, int firstCh, int lineNumber) {
+    char identifier[200];
+    size_t x = 0;
+
+    //inpt first char to array
+    identifier[x++] = (char)firstCh;
+    
+    int c = fgetc(file);//get next char
+    
+    while (c != EOF && (isalnum((unsigned char)c) || c == '_') && x + 1 < sizeof(identifier)) {
+        identifier[x++] = (char)c;
+        c = fgetc(file);
+    }
+
+    identifier[x] = '\0';
+
+    //last char is not part of identifier, so push back
+    if (c != EOF) ungetc(c, file);
+
+    HashEntry *entry = hashLookUp(identifier);
+
+    if (entry) {
+        return makeToken(entry->category, entry->tokenValue, identifier, lineNumber);
+    }else {
+        return makeToken(CAT_LITERAL, L_IDENTIFIER, identifier, lineNumber);
+    }
+
+}
