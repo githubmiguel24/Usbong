@@ -61,7 +61,6 @@ typedef enum {
     S_DONE // (Unused in this implementation)
 } LexerState;
 
-
 // func prototypes
 void lexer(FILE *file, FILE *symbolFileAppend);
 Token makeToken(TokenCategory cat, int tokenValue, const char *lexeme, int lineNumber);
@@ -102,25 +101,23 @@ int main(int argc, char *argv[]) {
 void lexer (FILE *file, FILE *symbolFileAppend) {
    
     LexerState currentState = S_START;
-    char lexemeBuffer[1024]; // Buffer for building the current lexeme
+    char lexemeBuffer[1024]; //can hold max of 1024 characters of a single lexeme
     int lexemeIndex = 0;
     int lineNumber = 1;
-    int tokenStartLine = 1; // Line number where the current token started
+    int tokenStartLine = 1; 
     
     int c; // Current character
 
-    //FA LOOP START --> reads/chcks 1 character per iteration.
-    while (true) { // Loop until EOF is explicitly handled
+    //START --> reads/chcks 1 character per iteration.
+    while (true) { //keep looping until encounter eof (use return to exit lexer)
         
-        c = fgetc(file); // Get next char
-        Token tok;
+        c = fgetc(file); // Get first char
+        Token tok; //declare struct for tokens
         switch (currentState) {
-            
-            // --- START STATE ---
-            // This is the main router. It decides which state to go to
-            // based on the first character of a new token.
+
+            //START STATE:
             case S_START:
-                lexemeIndex = 0; // Reset buffer
+                lexemeIndex = 0; //set buffer index to 0
                 memset(lexemeBuffer, 0, sizeof(lexemeBuffer));
                 tokenStartLine = lineNumber;
 
@@ -586,7 +583,8 @@ int checkExtension(const char *filename) {
         return 1;
     } else return 0;  //file is not .usb file
 }
-//tokenValue
+
+//tokenValue to String
 static const char *token_value_name(const Token *t) {
     if (!t) return "(null)";
     switch (t->category) {
@@ -693,16 +691,18 @@ static const char *token_value_name(const Token *t) {
                 case C_MULTI_LINE: return "C_MULTI_LINE";
                 default: return "C_UNKNOWN";
             }
-        default: return "UNKNOWN_CATEGORY";
+        default: 
+            return "UNKNOWN_CATEGORY";
     }
 }
 
-//Print token as: lexeme | TOKEN_NAME
+//Print token as in this format:
+// Lexeme | Token
 void printToken(FILE *file, Token *t) {
     const char *lex;
     lex = t->lexeme;
     const char *name = token_value_name(t);
-    fprintf(file, "%s          | %s\n", lex, name);
+    fprintf(file, "%-15s | %s\n", lex, name);
 }
 
 //create a token
