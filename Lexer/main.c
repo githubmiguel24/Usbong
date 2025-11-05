@@ -1,5 +1,3 @@
-//Contains main() function.
-//Handles file input
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -7,25 +5,46 @@
 #include <ctype.h>
 #include <stdbool.h>
 
-// Prototypes
+// func prototypes
 void lexer(FILE *file);
 Token digitChecker(FILE *file, int firstCh, int lineNumber);
 Token identifierChecker(FILE *file, int firstCh, int lineNumber);
 Token make_token(TokenCategory cat, int tokenValue, const char *lexeme, int lineNumber);
 void print_token(const Token *t);
+int checkExtension(const char *filename);
+static const char *token_value_name(const Token *t);
 
-int main() {
-
-    //open file for source code reading
-    FILE *file;
-    file = fopen("sampleSourceCode.usb", "r");
-    if (file == NULL) {
-        perror("Error opening file");
+int main(int argc, char *argv[]) {
+    if (argc != 2) {
+        printf("proper input: ./programName <filename.usb>", argv[0]);
         return EXIT_FAILURE;
     }
-    lexer(file);
-    fclose(file); 
-    return EXIT_SUCCESS;
+
+    const char *filename = argv[1];
+    if (checkExtension(filename) == 0) {
+        printf("Error: File must have .usb extension\n");
+        return EXIT_FAILURE;
+    }else {
+        FILE *file = fopen(filename, "r");
+        if (!file) {
+            perror("Error opening file");
+            return EXIT_FAILURE;
+        }else {
+            printf("File opened successfully: %s\n", filename);
+            lexer(file);
+            fclose(file); 
+            return EXIT_SUCCESS;
+        }
+    }
+}
+
+//fn extension checker
+int checkExtension(const char *filename) {
+    const char *dot = strrchr(filename, '.');  //find last dot in filename
+    if (!dot) return 0;                        // if no dot found = no extension
+    if (strcmp(dot, ".usb") == 0) {  //if it matches .usb
+        return 1;
+    } else return 0;  //file is not .usb file
 }
 //tokenValue
 static const char *token_value_name(const Token *t) {
@@ -100,12 +119,8 @@ Token make_token(TokenCategory cat, int tokenValue, const char *lexeme, int line
     Token t;
     t.category = cat;
     t.tokenValue = tokenValue;
-    if (lexeme) {
-        t.lexeme = malloc(strlen(lexeme) + 1);
-        if (t.lexeme) strcpy(t.lexeme, lexeme);
-    } else {
-        t.lexeme = NULL;
-    }
+    t.lexeme = malloc(strlen(lexeme) + 1);
+    strcpy(t.lexeme, lexeme);
     t.lineNumber = lineNumber;
     return t;
 }
@@ -123,7 +138,6 @@ void lexer (FILE *file) {
         if (c == '\n') {
             lineNumber++;
         }
-       
         if (isspace((unsigned char)c)) {
             //ignore
         } else if(c == ';') {
@@ -165,15 +179,15 @@ void lexer (FILE *file) {
             }
         }else if (c == '\'') {
             char nextCh = (char)fgetc(file);
-            if (isalpha((unsigned char)nextCh)) {
-                // Handle character literal ('a', 'b', etc.)
+            if (isalpha((unsigned char)nextCh)|| isdigit((unsigned char)nextCh)) {
+                //for character literals ('a', 'b', ...)
                 char lex[2] = {nextCh, '\0'};
                 tok = make_token(CAT_LITERAL, L_TITIK_LITERAL, lex, lineNumber);
                 
-                // Consume closing quote
+                //check for closing quote
                 int closeQuote = fgetc(file);
                 if (closeQuote != '\'') {
-                    ungetc(closeQuote, file);  // Push back if not a closing quote
+                    ungetc(closeQuote, file);
                     tok = make_token(CAT_UNKNOWN, 0, lex, lineNumber);
                 }
                 produced = true;
@@ -266,7 +280,7 @@ void lexer (FILE *file) {
 
         if (produced) {
             print_token(&tok);
-            if (tok.lexeme) free(tok.lexeme);
+            
         }
 
         current = fgetc(file);
@@ -312,7 +326,7 @@ Token identifierChecker(FILE *file, int firstCh, int lineNumber) {
     char identifier[200];
     size_t x = 0;
 
-    // Add the first character
+    //inpt first char to array
     identifier[x++] = (char)firstCh;
     
     int c = fgetc(file);
