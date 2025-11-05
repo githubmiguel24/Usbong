@@ -227,8 +227,10 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 } else if (c == '.') {
                     lexemeBuffer[lexemeIndex++] = (char)c;
                     currentState = S_NUMBER_LUTANG; // Transition
-                } else {
-                    // --- FINAL STATE (BILANG Literal) ---
+                } else if(isalpha(c)){ //unexpected char 
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_UNKNOWN;
+                }else {
                     if (c != EOF){
                         ungetc(c, file);
                     }
@@ -346,7 +348,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 }
                 break;
 
-            case S_TITIK_TAIL: //saw final ' --> final state
+            case S_TITIK_TAIL: //previous input: /
                 if (c != EOF) 
                     ungetc(c, file);
                 lexemeBuffer[lexemeIndex] = '\0';
@@ -355,8 +357,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 currentState = S_START;
                 break;
             
-            // --- OPERATOR/COMMENT STATES ---
-            case S_OP_DIVIDE_HEAD: // Saw /
+            case S_OP_DIVIDE_HEAD: //prev input: /
                 if (c == '/') {
                     lexemeBuffer[lexemeIndex++] = (char)c;
                     currentState = S_COMMENT_SINGLE;
