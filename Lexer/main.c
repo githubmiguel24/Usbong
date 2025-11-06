@@ -68,33 +68,40 @@ void printToken(FILE *file, Token *t);
 int checkExtension(const char *filename);
 static const char *token_value_name(const Token *t);
 
-int main(int argc, char *argv[]) {
-    if (argc != 2) {
-        printf("proper input: ./programName <filename.usb>", argv[0]);
-        return EXIT_FAILURE;
-    }
-    initialize_table();
-    const char *filename = argv[1];
-    if (checkExtension(filename) == 0) {
-        printf("Error: File must have .usb extension\n");
-        return EXIT_FAILURE;
-    }else {
+int main() {
+    char filename[100];
+     initialize_table();
+    do {
+        printf("Please enter file name (should be in the same directory): ");
+        scanf("%s", filename);
+        //check extension, should be .usb
+        if (checkExtension(filename) == 0) {
+            printf("File must have .usb extension\n");
+            continue;
+        } 
+        //if .usb, try to open file
         FILE *file = fopen(filename, "r");
-        if (!file) {
-            perror("Error opening file");
-            return EXIT_FAILURE;
-        }else {
-            printf("File opened successfully: %s\n", filename);
-            fopen("Symbol Table.txt", "w"); // Clear the file
-            FILE *symbolFileAppend;
-            symbolFileAppend = fopen("Symbol Table.txt", "a");
-            fprintf(symbolFileAppend, "Lexeme           | Token Name\n");
-            lexer(file, symbolFileAppend);
-            fclose(file); 
-            fclose(symbolFileAppend);
-            return EXIT_SUCCESS;
+        //file check if visible
+        if(!file){
+            printf("File '%s' not found or cannot be opened.\n", filename);
+            continue;
+        } else {
+            printf("%s opened successfully.\n", filename);
         }
-    }
+        //create symbol table for output
+        fopen("Symbol Table.txt", "w");
+        FILE *symbolFileAppend;
+        symbolFileAppend = fopen("Symbol Table.txt", "a");
+        fprintf(symbolFileAppend, "Lexeme           | Token Name\n");
+        lexer(file, symbolFileAppend);
+        fclose(file); 
+        fclose(symbolFileAppend);
+        printf("Symbol Table.txt is created for %s. \n", filename);
+        break;
+    } while (true);
+    
+    system("pause"); 
+    return EXIT_SUCCESS;
 }
 
 // Lexer function that reads characters from the file and produces Token structs
@@ -118,25 +125,26 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
             //START STATE:
             case S_START:
                 lexemeIndex = 0; //set buffer index to 0
-                memset(lexemeBuffer, 0, sizeof(lexemeBuffer));
+                memset(lexemeBuffer, 0, sizeof(lexemeBuffer));//clear lexeme buffer array
                 tokenStartLine = lineNumber;
 
                 if (c == EOF) {
-                    return; // get out of loop if 
+                    return; //get out of lexer if eof is enocountered
                 }
 
-                if (isspace(c)) { //ignore white spaces
+                if (isspace(c)) { 
+                    //ignore white spaces
                     if (c == '\n') {
                         lineNumber++;
                     }
-                    //Stay in S_START
+                    currentState = S_START;//remain in state
                     continue; 
                 }
 
-                //if not space: input current char
+                //if not space, then input current char to buffer
                 lexemeBuffer[lexemeIndex++] = (char)c;
 
-                if (isalpha(c)) {
+                if (isalpha(c)) { 
                     currentState = S_IDENTIFIER;
                 } else if(c == '_'){
                     currentState = S_UNKNOWN;
@@ -537,21 +545,27 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 }
                 break;
             
-            case S_UNKNOWN: // Saw '_' or other invalid char
+            
+            case S_UNKNOWN: //Final state
                 if (isspace(c) || c == EOF || strchr("+-*/^%&|=!<>(){}[],.;", c)) {
-                    // --- FINAL STATE (UNKNOWN) ---
-                    if (c != EOF) ungetc(c, file);
-                    lexemeBuffer[lexemeIndex] = '\0';
+                    if (c != EOF){ 
+                        ungetc(c, file);
+                    }
+                    lexemeBuffer[lexemeIndex] = '\0'; //terminator
                     tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
                     printToken(symbolFileAppend, &tok);
-                    currentState = S_START;
-                    if (c == '\n') lineNumber++; // Don't miss this
+                    currentState = S_START; //reset to start state
+                    if (c == '\n') 
+                        lineNumber++; 
                 } else {
-                    // Keep consuming invalid chars
+                    //input all invalid characters to the buffer
+                    //remain in state
                     lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_UNKNOWN;
                 }
                 break;
-            
+
+
             case S_KEYWORD:
             case S_RESERVE:
             case S_NOISE:

@@ -1,4 +1,37 @@
 Lexeme           | Token Name
+bilang          | R_BILANG
+_y              | UNKNOWN_CATEGORY
+=               | O_ASSIGN
+12              | L_BILANG_LITERAL
+;               | D_SEMICOLON
+lutang          | R_LUTANG
 x               | L_IDENTIFIER
-hello123        | L_IDENTIFIER
-num_1           | L_IDENTIFIER
+=               | O_ASSIGN
+y               | L_IDENTIFIER
++               | O_PLUS
++               | O_PLUS
+;               | D_SEMICOLON
+lutang          | R_LUTANG
+z               | L_IDENTIFIER
+=               | O_ASSIGN
+12.456          | L_LUTANG_LITERAL
+;               | D_SEMICOLON
+titik           | R_TITIK
+a               | L_IDENTIFIER
+=               | O_ASSIGN
+'               | D_SQUOTE
+lutang          | R_LUTANG
+12a             | UNKNOWN_CATEGORY
+=               | O_ASSIGN
+123             | L_BILANG_LITERAL
+;               | D_SEMICOLON
+kwerdas         | R_KWERDAS
+kwer            | L_IDENTIFIER
+[               | D_LBRACKET
+30              | L_BILANG_LITERAL
+]               | D_RBRACKET
+=               | O_ASSIGN
+STRING THIS     | L_KWERDAS_LITERAL
+;               | D_SEMICOLON
+//comment here  | C_SINGLE_LINE
+/* comment this */ | C_MULTI_LINE
