@@ -1,8 +1,11 @@
 bilang _y = 12;
 lutang x = y++; 
 lutang z = 12.456;
-titik a = '
+titik a = 'a';
 lutang 12a = 123;
 kwerdas kwer[30] = "STRING THIS";
 //comment here
 /* comment this */
+kung(x = y && y = z){
+    ani(kwer);
+}

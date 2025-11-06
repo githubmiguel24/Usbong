@@ -1,0 +1,59 @@
+        case S_IDENTIFIER:
+                if (isalnum(c) || c == '_') {
+                    // Keep consuming characters and stay in this state
+                    lexemeBuffer[lexemeIndex++] = (char)c;
+                    currentState = S_IDENTIFIER;
+                } else {
+                    if (c != EOF){ 
+                        ungetc(c, file); // Put it back
+                    } 
+                    lexemeBuffer[lexemeIndex] = '\0'; // Finalize
+                    HashEntry *entry = hashLookUp(lexemeBuffer);
+                    if (entry) {
+                        currentState = S_KEYWORD;
+                        break;
+                    } else {
+                        //final state of identifier
+                        tok = makeToken(CAT_LITERAL, L_IDENTIFIER, lexemeBuffer, tokenStartLine);
+                        printToken(symbolFileAppend, &tok);
+                        currentState = S_START; // Reset
+                        break;
+                    }
+                    break;       
+                }
+                break;
+case S_KEYWORD:
+    tok = makeToken(entry->category, entry->tokenValue, lexemeBuffer, tokenStartLine);
+    printToken(symbolFileAppend, &tok);
+    currentState = S_START;
+    break;
+          
+
+          switch (c) {
+                        case '+': 
+                            currentState = S_OP_PLUS;
+                            break;
+                        case '-': 
+                            currentState = S_OP_MINUS;
+                            break;
+                        
+                        
+                            tok = makeToken(CAT_OPERATOR, O_MINUS, lexemeBuffer, tokenStartLine); break;
+                        case '*': tok = makeToken(CAT_OPERATOR, O_MULTIPLY, lexemeBuffer, tokenStartLine); break;
+                        case '^': tok = makeToken(CAT_OPERATOR, O_POW, lexemeBuffer, tokenStartLine); break;
+                        case '%': tok = makeToken(CAT_OPERATOR, O_MODULO, lexemeBuffer, tokenStartLine); break;
+                        
+                        case ';': tok = makeToken(CAT_DELIMITER, D_SEMICOLON, lexemeBuffer, tokenStartLine); break;
+                        case '{': tok = makeToken(CAT_DELIMITER, D_LBRACE, lexemeBuffer, tokenStartLine); break;
+                        case '}': tok = makeToken(CAT_DELIMITER, D_RBRACE, lexemeBuffer, tokenStartLine); break;
+                        case '(': tok = makeToken(CAT_DELIMITER, D_LPAREN, lexemeBuffer, tokenStartLine); break;
+                        case ')': tok = makeToken(CAT_DELIMITER, D_RPAREN, lexemeBuffer, tokenStartLine); break;
+                        case '[': tok = makeToken(CAT_DELIMITER, D_LBRACKET, lexemeBuffer, tokenStartLine); break;
+                        case ']': tok = makeToken(CAT_DELIMITER, D_RBRACKET, lexemeBuffer, tokenStartLine); break;
+                        case ',': tok = makeToken(CAT_DELIMITER, D_COMMA, lexemeBuffer, tokenStartLine); break;
+                        case '.': tok = makeToken(CAT_DELIMITER, D_DOT, lexemeBuffer, tokenStartLine); break;
+                        
+                        default:
+                            tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
+                            break;
+                    }

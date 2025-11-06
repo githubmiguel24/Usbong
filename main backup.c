@@ -259,6 +259,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
 
             //KWERDAS STATES
             case S_KWERDAS_HEAD: //previous input is double quotes
+                lexemeIndex = 0; // Reset buffer to *not* include the quotes
                 if (c == '"') {//means end of string
                     currentState = S_KWERDAS_TAIL; // Go to TAIL state
                     continue; 
@@ -286,25 +287,24 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     currentState = S_KWERDAS_TAIL; //second quote --> end of string
                 } else if (c == EOF || c == '\n') {
                     //error check
-                    if (c != EOF){
+                    if (c != EOF) 
                         ungetc(c, file);
-                    } 
-                    lexemeBuffer[lexemeIndex] = '\0';
-                    tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine); // Unterminated string
-                    printToken(symbolFileAppend, &tok);
-                    currentState = S_START; //go to next lexeme
+                        lexemeBuffer[lexemeIndex] = '\0';
+                        tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine); // Unterminated string
+                        printToken(symbolFileAppend, &tok);
+                        currentState = S_START; //go to next lexeme
                     if(c == '\n') 
                         lineNumber++;
-                    } else {
-                        lexemeBuffer[lexemeIndex++] = (char)c;
+                } else {
+                    // Stay in body, consume char
+                    lexemeBuffer[lexemeIndex++] = (char)c;
                 }
             break;
 
             case S_KWERDAS_TAIL: //input: second " (final state)
                 if (c != EOF) 
                     ungetc(c, file); //rewind to prev char
-                    lexemeBuffer[lexemeIndex++] = '\"'; 
-                    lexemeBuffer[lexemeIndex] = '\0';
+                    lexemeBuffer[lexemeIndex] = '\0'; // Finalize the *body*
                     tok = makeToken(CAT_LITERAL, L_KWERDAS_LITERAL, lexemeBuffer, tokenStartLine);
                     printToken(symbolFileAppend, &tok);
                     currentState = S_START; //move on to next lexeme
@@ -312,6 +312,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
 
             // for potential chars
             case S_TITIK_HEAD: //previous input '
+                lexemeIndex = 0; // Reset buffer to *not* include the quotes
                 if (c == '\'' || c == EOF || c == '\n') {
                     //error or final state
                     if (c != EOF)
@@ -324,7 +325,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     if(c == '\n') 
                         lineNumber++;
                 } else {
-                    // this mean character or space is the next input
+                    // this mean character is the next input
                     lexemeBuffer[lexemeIndex++] = (char)c;
                     currentState = S_TITIK_BODY;
                 }
@@ -334,6 +335,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 if (c == '\'') {
                     currentState = S_TITIK_TAIL; //send to final state
                 } else {
+                    //error check
                     if (c != EOF) 
                         ungetc(c, file); 
                     lexemeBuffer[lexemeIndex] = '\0';
@@ -344,11 +346,9 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 }
                 break;
 
-            case S_TITIK_TAIL: //previous input: char or soace
-                if (c != EOF){
+            case S_TITIK_TAIL: //previous input: /
+                if (c != EOF) 
                     ungetc(c, file);
-                }
-                lexemeBuffer[lexemeIndex++] = '\'';
                 lexemeBuffer[lexemeIndex] = '\0';
                 tok = makeToken(CAT_LITERAL, L_TITIK_LITERAL, lexemeBuffer, tokenStartLine);
                 printToken(symbolFileAppend, &tok);
@@ -406,11 +406,12 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 }
                 break; 
 
-            case S_COMMENT_MULTI_TAIL: //prev input: *
+            case S_COMMENT_MULTI_TAIL: // Saw /*...*
                  if (c == '\n') 
                  lineNumber++;
                  
                 if (c == '/') {
+                    // --- FINAL STATE (Multi-Line Comment) ---
                     lexemeBuffer[lexemeIndex++] = (char)c;
                     lexemeBuffer[lexemeIndex] = '\0';
                     tok = makeToken(CAT_COMMENT, C_MULTI_LINE, lexemeBuffer, tokenStartLine);
@@ -420,6 +421,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     lexemeBuffer[lexemeIndex++] = (char)c; // Saw another *, e.g. "/***"
                     // Stay in S_COMMENT_MULTI_TAIL
                 } else if (c == EOF) {
+                     // --- FINAL STATE (Error) ---
                     lexemeBuffer[lexemeIndex] = '\0';
                     tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine); // Unterminated comment
                     printToken(symbolFileAppend, &tok);
@@ -430,17 +432,21 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 }
                 break; 
 
-            case S_OP_AND_HEAD: //prev input: &
+            case S_OP_AND_HEAD: // Saw &
                 if (c == '&') {
                     lexemeBuffer[lexemeIndex++] = (char)c;
-                    currentState = S_OP_AND_TAIL;
-                    
-                } else {
-                    if (c != EOF) {
-                        ungetc(c, file);
-                    }
+                    //final state
                     lexemeBuffer[lexemeIndex] = '\0';
-                    currentState = S_UNKNOWN;
+                    tok = makeToken(CAT_OPERATOR, O_AND, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START; 
+                } else {
+                    // --- FINAL STATE (UNKNOWN) ---
+                    if (c != EOF) ungetc(c, file);
+                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "&"
+                    tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine);
+                    printToken(symbolFileAppend, &tok);
+                    currentState = S_START;
                 }
                 break;
             
@@ -522,11 +528,14 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
             case S_OP_GREATER_HEAD: // Saw >
                 if (c == '=') {
                     lexemeBuffer[lexemeIndex++] = (char)c;
+                    // --- FINAL STATE (GREATER_EQ Operator) ---
+                    // This is S_OP_GREATER_TAIL
                     lexemeBuffer[lexemeIndex] = '\0';
                     tok = makeToken(CAT_OPERATOR, O_GREATER_EQ, lexemeBuffer, tokenStartLine);
                     printToken(symbolFileAppend, &tok);
                     currentState = S_START; 
                 } else {
+                    // --- FINAL STATE (GREATER Operator) ---
                     if (c != EOF) ungetc(c, file);
                     lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just ">"
                     tok = makeToken(CAT_OPERATOR, O_GREATER, lexemeBuffer, tokenStartLine);
@@ -554,7 +563,6 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     currentState = S_UNKNOWN;
                 }
                 break;
-
             case S_OP_PLUS:
                 if (c != EOF) ungetc(c, file); 
                 tok = makeToken(CAT_OPERATOR, O_PLUS, lexemeBuffer, tokenStartLine);
@@ -639,15 +647,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
             case S_OP_NOT_TAIL:
             case S_OP_LESS_TAIL:
             case S_OP_GREATER_TAIL:
-            case S_OP_AND_TAIL: //input is &
-                if (c != EOF) {
-                    ungetc(c, file);
-                }
-                lexemeBuffer[lexemeIndex] = '\0';
-                tok = makeToken(CAT_OPERATOR, O_AND, lexemeBuffer, tokenStartLine);
-                printToken(symbolFileAppend, &tok);
-                currentState = S_START; 
-                break;
+            case S_OP_AND_TAIL:
             case S_OP_OR_TAIL:
             case S_DONE:
                 fprintf(stderr, "Lexer Error: Entered unreachable state %d on line %d.\n", currentState, lineNumber);

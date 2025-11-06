@@ -19,7 +19,8 @@ z               | L_IDENTIFIER
 titik           | R_TITIK
 a               | L_IDENTIFIER
 =               | O_ASSIGN
-'               | D_SQUOTE
+'a'             | L_TITIK_LITERAL
+;               | D_SEMICOLON
 lutang          | R_LUTANG
 12a             | UNKNOWN_CATEGORY
 =               | O_ASSIGN
@@ -31,7 +32,24 @@ kwer            | L_IDENTIFIER
 30              | L_BILANG_LITERAL
 ]               | D_RBRACKET
 =               | O_ASSIGN
-STRING THIS     | L_KWERDAS_LITERAL
+"STRING THIS"   | L_KWERDAS_LITERAL
 ;               | D_SEMICOLON
 //comment here  | C_SINGLE_LINE
 /* comment this */ | C_MULTI_LINE
+kung            | K_KUNG
+(               | D_LPAREN
+x               | L_IDENTIFIER
+=               | O_ASSIGN
+y               | L_IDENTIFIER
+&&              | O_AND
+y               | L_IDENTIFIER
+=               | O_ASSIGN
+z               | L_IDENTIFIER
+)               | D_RPAREN
+{               | D_LBRACE
+ani             | K_ANI
+(               | D_LPAREN
+kwer            | L_IDENTIFIER
+)               | D_RPAREN
+;               | D_SEMICOLON
+}               | D_RBRACE
