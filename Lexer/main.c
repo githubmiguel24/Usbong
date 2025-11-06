@@ -776,6 +776,10 @@ static const char *token_value_name(const Token *t) {
                 case R_BULYAN: return "R_BULYAN";
                 case R_DOBLE: return "R_DOBLE";
                 case R_WALA: return "R_WALA";
+                case R_PI: return "R_C_PI";
+                case R_E_NUM: return "R_C_E";
+                case R_Kiss: return "R_C_KISS";
+                case R_SAMPLE_CONST_STRING: return "R_C_SAMPLE_CONST_STRING";
                 default: return "R_UNKNOWN";
             };
 

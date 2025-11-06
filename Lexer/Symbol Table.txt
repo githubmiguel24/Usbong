@@ -349,13 +349,13 @@ showNumbers     | L_IDENTIFIER
 ;               | D_SEMICOLON
 }               | D_RBRACE
 }               | D_RBRACE
-kiss            | R_UNKNOWN
+kiss            | R_KISS
 ;               | D_SEMICOLON
-pi              | R_UNKNOWN
+pi              | R_PI
 ;               | D_SEMICOLON
 constSampleString | L_IDENTIFIER
 ;               | D_SEMICOLON
-E_num           | R_UNKNOWN
+E_num           | R_E
 ;               | D_SEMICOLON
 (               | D_LPAREN
 boolean         | L_IDENTIFIER
