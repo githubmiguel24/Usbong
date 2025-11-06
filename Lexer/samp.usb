@@ -13,3 +13,4 @@ kwerdas kwer[30] = "STRING THIS";
 kung(x = y && y = z){
     ani(kwer);
 }
+bulyan bul = "tama";

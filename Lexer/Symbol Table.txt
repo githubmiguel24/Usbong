@@ -74,3 +74,8 @@ kwer            | L_IDENTIFIER
 )               | D_RPAREN
 ;               | D_SEMICOLON
 }               | D_RBRACE
+bulyan          | R_BULYAN
+bul             | L_IDENTIFIER
+=               | O_ASSIGN
+"tama"          | L_KWERDAS_LITERAL
+;               | D_SEMICOLON
