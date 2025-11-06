@@ -10,7 +10,7 @@ comment
 */
 kwerdas StringIto[30] = "ITO AY STRING";
 
-	titik titikIto = ‘a’;
+	titik titikIto = ‘a’; 'a'
 
 	tanim (“%lf, %d”, y, z);
 
@@ -23,11 +23,11 @@ ani(“i = %d”, i);
 	
 }
 doble itoayDoble = 12.2321;
-
+itakda ito = "HELLO";
 para i mula  0 sa 5{
  	bunga ay (“BUNGA BUNGA”);
 }
-
+sampleConstString; 
 
     kung (!x){
        ani("!x is true\n");
@@ -68,6 +68,9 @@ bilang quotient = 6/3;
 bilang exponent = 2^3;
 bilang modulo = 10%4;
 bilang difference = 10-6:
+
+protektado bilang el = 13;
+pribado bilang ma = 14; 
 
 statik bilang ito = 123;
 

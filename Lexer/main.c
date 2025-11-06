@@ -197,7 +197,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 break;
 
     
-            case S_IDENTIFIER:
+            case S_IDENTIFIER: 
                 if (isalnum(c) || c == '_') {
                     lexemeBuffer[lexemeIndex++] = (char)c;
                     currentState = S_IDENTIFIER;
