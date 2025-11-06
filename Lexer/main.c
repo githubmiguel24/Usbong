@@ -145,6 +145,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 //if not space, then input current char to buffer
                 lexemeBuffer[lexemeIndex++] = (char)c;
 
+                //check character 
                 if (isalpha(c)) { 
                     currentState = S_IDENTIFIER;
                 } else if(c == '_'){
@@ -369,7 +370,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 } else {
                     //divide operator
                     if (c != EOF) ungetc(c, file); 
-                    lexemeBuffer[lexemeIndex] = '\0'; // Lexeme is just "/"
+                    lexemeBuffer[lexemeIndex] = '\0';
                     tok = makeToken(CAT_OPERATOR, O_DIVIDE, lexemeBuffer, tokenStartLine);
                     printToken(symbolFileAppend, &tok);
                     currentState = S_START; 
@@ -385,7 +386,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     printToken(symbolFileAppend, &tok);
                     currentState = S_START; 
                 } else {
-                    lexemeBuffer[lexemeIndex++] = (char)c; // Consume
+                    lexemeBuffer[lexemeIndex++] = (char)c;
                 }
                 break;
 
@@ -397,14 +398,13 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     lexemeBuffer[lexemeIndex++] = (char)c;
                     currentState = S_COMMENT_MULTI_TAIL;
                 } else if (c == EOF) {
-                    // --- FINAL STATE (Error) ---
                     lexemeBuffer[lexemeIndex] = '\0';
                     tok = makeToken(CAT_UNKNOWN, 0, lexemeBuffer, tokenStartLine); // Unterminated comment
                     printToken(symbolFileAppend, &tok);
                     currentState = S_START; // Will be caught by EOF check
                 } else {
                     lexemeBuffer[lexemeIndex++] = (char)c;
-                    // Stay in S_COMMENT_MULTI_HEAD
+                   currentState = S_COMMENT_MULTI_HEAD;
                 }
                 break; 
 
