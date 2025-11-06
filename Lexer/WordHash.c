@@ -94,4 +94,10 @@ void initialize_table(void) {
     hashInsert("ang", CAT_NOISEWORD, N_ANG);
     hashInsert("mula", CAT_NOISEWORD, N_MULA);
     hashInsert("itakda", CAT_NOISEWORD, N_ITAKDA);
+    //Const
+    hashInsert("pi", CAT_RESERVED, R_PI);
+    hashInsert("E_num", CAT_RESERVED, R_E_NUM);
+    hashInsert("kiss", CAT_RESERVED, R_Kiss);
+    hashInsert("sampleConstString", CAT_RESERVED, R_SAMPLE_CONST_STRING);
+    
 }

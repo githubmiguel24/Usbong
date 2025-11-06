@@ -44,7 +44,11 @@ typedef enum {
     R_LUTANG,
     R_BULYAN,
     R_DOBLE,
-    R_WALA
+    R_WALA,
+    R_PI,            
+    R_E_NUM,                
+    R_SAMPLE_CONST_STRING,
+    R_Kiss
 } ReservedToken;
 
 //Tokens for noisewords category:
