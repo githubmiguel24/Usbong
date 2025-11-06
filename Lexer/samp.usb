@@ -2,6 +2,10 @@ bilang _y = 12;
 lutang x = y++; 
 lutang z = 12.456;
 titik a = 'a';
+titik b = '1a'
+titik c = a;
+titik b = 1;
+bilang d = abc;
 lutang 12a = 123;
 kwerdas kwer[30] = "STRING THIS";
 //comment here
