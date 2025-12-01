@@ -1,7 +1,8 @@
 wala ugat(){
 
 bilang z = 13;
-
+'
+"
 lutang y;
 //comment ito
 
@@ -25,7 +26,7 @@ ani(“i = %d”, i);
 doble itoayDoble = 12.2321;
 itakda ito = "HELLO";
 para i mula  0 sa 5{
- 	bunga ay (“BUNGA BUNGA”);
+ 	bunga ay ("BUNGA BUNGA");
 }
 sampleConstString; 
 
@@ -123,17 +124,14 @@ Ani(i);
 
 ; { } ( ) [ ] , .
 
-errors: 
-/* oops
-
 _anInvalidIdentifier 
 123invalid 
 123. 
 "this string is not terminated
 
-
+bilang n = 7\4;
 'ab' 
-''   
-&    
-|   
-@ $ ?
+''
+'
+"
+kwerdas

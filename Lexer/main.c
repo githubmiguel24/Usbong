@@ -35,7 +35,8 @@ typedef enum {
     S_OP_MULTIPLY,
     S_OP_POW,
     S_OP_MOD,      
-    S_OP_DIVIDE_HEAD,      // /  (may lead to comments)
+    S_OP_DIVIDE_HEAD, // /  (may lead to comments)
+    S_OP_INT_DIVIDE,  // (\)    
     S_OP_ASSIGN_HEAD,      // =
     S_OP_ASSIGN_TAIL,  // == (Final State)
     S_OP_NOT_HEAD,         // !
@@ -180,7 +181,8 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                         case '*': currentState = S_OP_MULTIPLY; break;
                         case '^': currentState = S_OP_POW; break; 
                         case '%': currentState = S_OP_MOD; break;
-                        
+                        case '\\': currentState = S_OP_INT_DIVIDE; break;
+
                         // DELIMITERS transition to the S_DELIMITER state
                         case ';': currentState = S_DELIMITER; break;
                         case '{': currentState = S_DELIMITER; break;
@@ -376,7 +378,7 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                     currentState = S_START; 
                 }
                 break; 
-
+                
             case S_COMMENT_SINGLE:
                 if (c == '\n' || c == EOF) {
                     //single line
@@ -432,6 +434,15 @@ void lexer (FILE *file, FILE *symbolFileAppend) {
                 }
                 break; 
 
+            case S_OP_INT_DIVIDE:
+                if (c != EOF) {
+                    ungetc(c, file);
+                }
+                tok = makeToken(CAT_OPERATOR, O_INT_DIVIDE, lexemeBuffer, tokenStartLine); 
+                printToken(symbolFileAppend, &tok); 
+                currentState = S_START; 
+                break;   
+            
             case S_OP_AND_HEAD: //prev input: &
                 if (c == '&') {
                     lexemeBuffer[lexemeIndex++] = (char)c;
@@ -717,6 +728,7 @@ static const char *token_value_name(const Token *t) {
                 case O_MINUS: return "O_MINUS";
                 case O_MULTIPLY: return "O_MULTIPLY";
                 case O_DIVIDE: return "O_DIVIDE";
+                case O_INT_DIVIDE: return "O_INT_DIVIDE";
                 case O_POW: return "O_POW";
                 case O_MODULO: return "O_MODULO";
                 case O_ASSIGN: return "O_ASSIGN";

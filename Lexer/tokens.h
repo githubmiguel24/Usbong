@@ -69,6 +69,7 @@ typedef enum {
     O_MINUS,       // -
     O_MULTIPLY,    // *
     O_DIVIDE,      // /
+    O_INT_DIVIDE,  // (\)
     O_POW,        // ^
     O_MODULO,      // %
     O_ASSIGN,      // =
